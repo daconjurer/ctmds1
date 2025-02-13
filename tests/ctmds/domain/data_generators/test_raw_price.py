@@ -1,6 +1,6 @@
 import numpy as np
 
-from ctmds.domain.data_generators.raw_price import (
+from ctmds.data_generators.raw_price import (
     normal_distribution_generator,
     random_generator,
     random_iterator,
@@ -36,7 +36,10 @@ def test_normal_distribution_generator():
     ...
 
     # Test
-    result = normal_distribution_generator(10, 10)
+    result = normal_distribution_generator(
+        base_price=10,
+        periods=10,
+    )
 
     # Validation
     assert len(result) == 10
@@ -51,7 +54,10 @@ def test_normal_distribution_generator_within_std_dev():
     size = 1000  # Large sample size for statistical significance
 
     # Test
-    result = normal_distribution_generator(mean, size)
+    result = normal_distribution_generator(
+        base_price=mean,
+        periods=size,
+    )
 
     # Validation
     assert len(result) == size

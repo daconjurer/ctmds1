@@ -1,4 +1,5 @@
 import random
+from datetime import datetime
 from decimal import Decimal
 from typing import Iterator
 
@@ -16,8 +17,9 @@ def random_generator(num: int) -> np.ndarray:
 
 def normal_distribution_generator(
     base_price: float,
-    periods: int,
-    std_dev: float = 2.0,
+    date: datetime | None = None,
+    periods: int = 24,
+    std_dev: float = 1.0,
     seed: int | None = None,
 ) -> list[float]:
     """Generate random decimals representing prices, following a normal distribution"""

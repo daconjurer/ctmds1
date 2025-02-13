@@ -1,29 +1,12 @@
 from datetime import datetime
-from typing import Callable, Sequence
+from typing import Callable
 
-from pydantic import BaseModel
+from pytz import country_timezones
 
-from ctmds.domain.constants import COUNTRY_BASE_PRICES, CountryCodes, Granularity
-from ctmds.domain.data_generators.dates import TimezoneAwareDate
-from ctmds.domain.data_generators.raw_price import normal_distribution_generator
-
-
-class DailyPrice(BaseModel):
-    price: float
-    timestamp: str
-
-
-class DailyPricesCollection(BaseModel):
-    prices: Sequence[DailyPrice]
-
-
-# Mapping of country codes to their timezone names
-COUNTRY_TIMEZONES = {
-    CountryCodes.GB: "Europe/London",
-    CountryCodes.FR: "Europe/Paris",
-    CountryCodes.NL: "Europe/Amsterdam",
-    CountryCodes.DE: "Europe/Berlin",
-}
+from ctmds.data_generators.raw_price import normal_distribution_generator
+from ctmds.domain.constants import CountryCodes, Granularity
+from ctmds.domain.models.price import Price, PriceCollection
+from ctmds.utils.date import TimezoneAwareDate
 
 
 def format_time(
@@ -39,10 +22,11 @@ def format_time(
 def daily_prices_with_timestamps(
     date: datetime,
     country_code: CountryCodes,
+    base_price: float,
     granularity: Granularity = Granularity.HOURLY,
     seed: int | None = None,
     daily_prices_generator: Callable = normal_distribution_generator,
-) -> DailyPricesCollection:
+) -> PriceCollection:
     """
     Generate random daily prices for a specific country and date.
 
@@ -62,19 +46,20 @@ def daily_prices_with_timestamps(
         Collection of daily prices with timestamps
     """
 
-    timezone = COUNTRY_TIMEZONES[country_code]
+    timezone = country_timezones[country_code.value][0]
     day_hours = TimezoneAwareDate(date, timezone).get_day_hours()
 
     # Calculate number of periods based on actual hours and granularity
     num_hours = day_hours
     periods = num_hours * 2 if granularity == Granularity.HALF_HOURLY else num_hours
 
-    base_price = COUNTRY_BASE_PRICES[country_code]
-    prices = daily_prices_generator(base_price=base_price, periods=periods, seed=seed)
+    prices = daily_prices_generator(
+        base_price=base_price, date=date, periods=periods, seed=seed
+    )
 
     prices_with_timestamps = []
     for i, price in enumerate(prices):
         time_str = format_time(i, granularity)
-        prices_with_timestamps.append(DailyPrice(price=price, timestamp=time_str))
+        prices_with_timestamps.append(Price(price=price, timestamp=time_str))
 
-    return DailyPricesCollection(prices=prices_with_timestamps)
+    return PriceCollection(prices=prices_with_timestamps)
